@@ -26,7 +26,7 @@ class ActionController extends CommonFormController
      */
     public function newAction ()
     {
-        $success = 0;
+	    $success = 0;
         $valid   = $cancelled = false;
         $method  = $this->request->getMethod();
         $session = $this->factory->getSession();

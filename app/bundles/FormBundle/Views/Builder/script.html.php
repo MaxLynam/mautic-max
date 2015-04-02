@@ -6,12 +6,45 @@
  * @link        http://mautic.org
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
-
 $fields   = $form->getFields();
 $formName = \Mautic\CoreBundle\Helper\InputHelper::alphanum($form->getName());
 ?>
-
 <script type="text/javascript">
+
+jQuery('input[type=file]').each(function (){
+	jQuery('.mauticform-hidden').append("<input type='text' style='display:none' name=mauticform[file_name] value='"+jQuery(this).attr('name')+"'></input>");
+	jQuery('.mauticform-hidden').append("<input type='text' style='display:none' name=mauticform[file_directory] value='"+jQuery(this).attr('directories')+"'></input>");
+	});
+	
+	function validateFile(ele_file) {
+			var file = jQuery(ele_file).val();
+			
+			var str = jQuery(ele_file).attr('allowtype');
+			var temp = new Array();
+			temp = str.split(";");
+            var filetype = file.substr((~-file.lastIndexOf(".") >>> 0) + 2);
+			filetype = filetype.toUpperCase();
+			for (a in temp)
+            	{
+					if (filetype==temp[a])
+					    return 0;
+				}
+				return 1;
+        }
+	
+	 jQuery("#mauticform_<?php echo $formName; ?>").submit(function(event){
+		if(jQuery('input[type=file]'))
+		{
+			var file_error = 0;
+			jQuery('input[type=file]').each(function (){file_error+= validateFile(this)})
+			if(file_error>0)
+			{	
+				alert("Wrong Type")
+        		event.preventDefault();
+			}
+		}
+    }); 
+
 var MauticForm_<?php echo $formName; ?> = {
     formId: "mauticform_<?php echo $formName; ?>",
     validateForm: function () {
@@ -26,13 +59,19 @@ var MauticForm_<?php echo $formName; ?> = {
             }
             return optionsValid;
         }
-
-        function validateEmail(email) {
+		
+		 function validateEmail(email) {
             var atpos = email.indexOf("@");
             var dotpos = email.lastIndexOf(".");
             var valid = (atpos < 1 || dotpos < atpos + 2 || dotpos + 2 >= email.length) ? false : true;
             return valid;
         }
+		
+		/*function fileError(){
+			 var elContainer = document.getElementById(containerId);
+			 var elErrorSpan = elContainer.querySelector('.mauticform-errormsg');
+             elErrorSpan.style.display = (valid) ? 'none' : '';
+		}*/
 
         function markError(containerId, valid) {
             var elContainer = document.getElementById(containerId);
@@ -41,6 +80,7 @@ var MauticForm_<?php echo $formName; ?> = {
         }
 
         var elForm = document.getElementById(this.formId);
+		
         <?php foreach ($fields as $f):
         if ($f->isRequired()):
         $name = "mauticform[".$f->getAlias()."]";
@@ -54,7 +94,6 @@ var MauticForm_<?php echo $formName; ?> = {
             if ($multiple)
                 $name .= '[]';
         ?>
-
         var valid = (elForm.elements["<?php echo $name; ?>"].value != '');
         <?php
         break;

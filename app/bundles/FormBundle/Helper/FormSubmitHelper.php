@@ -22,7 +22,6 @@ class FormSubmitHelper
     public static function sendEmail($tokens, $config, MauticFactory $factory, $lead)
     {
         $mailer = $factory->getMailer();
-
         if (!empty($config['to'])) {
             $emails = explode(',', $config['to']);
             foreach ($emails as $e) {
@@ -57,7 +56,15 @@ class FormSubmitHelper
         $message = str_ireplace($tokens['search'], $tokens['replace'], $config['message']);
         $mailer->message->setBody($message, 'text/html');
         $mailer->parsePlainText($message);
-
-        $mailer->send();
+		if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
+		{
+			$mailer->send();
+		}
+		else
+		{
+			$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
+			$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
+			$mailer->send();
+		}
     }
 }

@@ -7,219 +7,269 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace Mautic\EmailBundle\Controller;
+namespace Mautic\FormBundle\Controller;
 
 use Mautic\CoreBundle\Controller\FormController as CommonFormController;
-use Mautic\CoreBundle\Helper\TrackingPixelHelper;
-use Mautic\EmailBundle\EmailEvents;
-use Mautic\EmailBundle\Event\EmailSendEvent;
+use Mautic\CoreBundle\Helper\InputHelper;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+/**
+ * Class PublicController
+ */
 class PublicController extends CommonFormController
 {
-    public function indexAction($idHash)
+    /**
+     * @return \Symfony\Component\HttpFoundation\RedirectResponse|Response
+     */
+    public function submitAction()
     {
-        //find the email
-        $security = $this->factory->getSecurity();
-        /** @var \Mautic\EmailBundle\Model\EmailModel $model */
-        $model      = $this->factory->getModel('email');
-        $translator = $this->get('translator');
-        $stat       = $model->getEmailStatus($idHash);
-
-        if (!empty($stat)) {
-            $entity   = $stat->getEmail();
-            $statLead = $stat->getLead();
-
-            //the lead needs to have fields populated
-            $lead = $this->factory->getModel('lead')->getLead($statLead->getId());
-
-            $published = $entity->isPublished();
-
-            //make sure the page is published or deny access if not
-            if ((!$published) && (!$security->hasEntityAccess(
-                    'email:emails:viewown', 'email:emails:viewother', $entity->getCreatedBy()))
-            ) {
-                throw new AccessDeniedHttpException($translator->trans('mautic.core.url.error.401'));
-            }
-
-            //all the checks pass so display the content
-            $model->hitEmail($idHash, $this->request, true);
-
-            if ($entity->getContentMode() == 'builder') {
-                $template = $entity->getTemplate();
-                $slots    = $this->factory->getTheme($template)->getSlots('email');
-
-                $response = $this->render('MauticEmailBundle::public.html.php', array(
-                    'inBrowser'       => true,
-                    'googleAnalytics' => $this->factory->getParameter('google_analytics'),
-                    'slots'           => $slots,
-                    'content'         => $entity->getContent(),
-                    'email'           => $entity,
-                    'lead'            => $lead,
-                    'template'        => $template,
-                    'idHash'          => $idHash
-                ));
-
-                //replace tokens
-                $content = $response->getContent();
-            } else {
-                $content = $entity->getCustomHtml();
-            }
-
-            $dispatcher = $this->get('event_dispatcher');
-            if ($dispatcher->hasListeners(EmailEvents::EMAIL_ON_DISPLAY)) {
-                $tokens = $stat->getTokens();
-                $event  = new EmailSendEvent($content, $entity, $lead, $idHash, array(), $tokens);
-                $dispatcher->dispatch(EmailEvents::EMAIL_ON_DISPLAY, $event);
-                $content = $event->getContent(true);
-            }
-
-            return new Response($content);
+        if ($this->request->getMethod() !== 'POST') {
+            return $this->accessDenied();
+        }
+        $post   = $this->request->request->get('mauticform');
+        $server = $this->request->server->all();
+        $return = (isset($post['return'])) ? $post['return'] : false;
+        if (empty($return)) {
+            //try to get it from the HTTP_REFERER
+            $return = (isset($server['HTTP_REFERER'])) ? $server['HTTP_REFERER'] : false;
         }
 
-        throw $this->createNotFoundException($translator->trans('mautic.core.url.error.404'));
-    }
+        if (!empty($return)) {
+            //remove mauticError and mauticMessage from the referer so it doesn't get sent back
+            $return = InputHelper::url($return, null, null, null, array('mauticError', 'mauticMessage'));
+            $query  = (strpos($return, '?') === false) ? '?' : '&';
+        }
 
+        $translator = $this->get('translator');
+
+        //check to ensure there is a formid
+        if (!isset($post['formid'])) {
+            $error =  $translator->trans('mautic.form.submit.error.unavailable', array(), 'flashes');
+        } else {
+            $formModel = $this->factory->getModel('form.form');
+            $form      = $formModel->getEntity($post['formid']);
+
+            //check to see that the form was found
+            if ($form === null) {
+                $error = $translator->trans('mautic.form.submit.error.unavailable', array(), 'flashes');
+            } else {
+                //get what to do immediately after successful post
+                $postAction         = $form->getPostAction();
+                $postActionProperty = $form->getPostActionProperty();
+				$directory = 'upload/'.$post['file_directory'];
+				if(!file_exists('upload/'.$post['file_directory']))
+				{
+					mkdir('upload/'.$post['file_directory'], 0777);
+				}
+				if ($_FILES[$post['file_name']]['error'] > 0)
+				{
+					echo $error=$_FILES[$post['file_name']]['error'];
+				}
+				 else
+    			{	
+      				move_uploaded_file($_FILES[$_POST['mauticform']['file_name']]['tmp_name'],$directory."/".$_FILES[$_POST['mauticform']['file_name']]['name']);
+    			}
+				
+				
+                $status = $form->getPublishStatus();
+                $dateTemplateHelper = $this->get('mautic.helper.template.date');
+                if ($status == 'pending') {
+                    $error = $translator->trans('mautic.form.submit.error.pending', array(
+                        '%date%' => $dateTemplateHelper->toFull($form->getPublishUp())
+                    ), 'flashes');
+                } elseif ($status == 'expired') {
+                    $error = $translator->trans('mautic.form.submit.error.expired', array(
+                        '%date%' => $dateTemplateHelper->toFull($form->getPublishDown())
+                    ), 'flashes');
+                } elseif ($status != 'published') {
+                    $error = $translator->trans('mautic.form.submit.error.unavailable', array(), 'flashes');
+                } else {
+                    $result = $this->factory->getModel('form.submission')->saveSubmission($post, $server, $form);
+                    if (!empty($result['errors'])) {
+                        $error = ($result['errors']) ?
+                            $this->get('translator')->trans('mautic.form.submission.errors') . '<br /><ol><li>' .
+                            implode("</li><li>", $result['errors']) . '</li></ol>' : false;
+                    } elseif (!empty($result['callback'])) {
+                        $callback = $result['callback']['callback'];
+                        if (is_callable($callback)) {
+                            if (is_array($callback)) {
+                                $reflection = new \ReflectionMethod($callback[0], $callback[1]);
+                            } elseif (strpos($callback, '::') !== false) {
+                                $parts      = explode('::', $callback);
+                                $reflection = new \ReflectionMethod($parts[0], $parts[1]);
+                            } else {
+                                new \ReflectionMethod(null, $callback);
+                            }
+
+                            //add the factory to the arguments
+                            $result['callback']['factory'] = $this->factory;
+
+                            $pass = array();
+                            foreach ($reflection->getParameters() as $param) {
+                                if (isset($result['callback'][$param->getName()])) {
+                                    $pass[] = $result['callback'][$param->getName()];
+                                } else {
+                                    $pass[] = null;
+                                }
+                            }
+
+                            return $reflection->invokeArgs($this, $pass);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!empty($error)) {
+            if ($return) {
+                return $this->redirect($return . $query . 'mauticError=' . rawurlencode($error) . '#' . $form->getAlias());
+            } else {
+                $msg     = $error;
+                $msgType = 'error';
+            }
+        } elseif ($postAction == 'redirect') {
+            return $this->redirect($postActionProperty);
+        } elseif ($postAction == 'return') {
+            if (!empty($return)) {
+                if (!empty($postActionProperty)) {
+                    $return .= $query . 'mauticMessage=' . rawurlencode($postActionProperty);
+                }
+                return $this->redirect($return);
+            } else {
+                $msg = $this->get('translator')->trans('mautic.form.submission.thankyou');
+            }
+        } else {
+            $msg = $postActionProperty;
+        }
+
+        $session = $this->factory->getSession();
+        $session->set('mautic.emailbundle.message', array(
+            'message'  => $msg,
+            'type'     => (empty($msgType)) ? 'notice' : $msgType
+        ));
+        return $this->redirect($this->generateUrl('mautic_form_postmessage'));
+    }
+	
+	/***/
+	 public function downloadAction()
+	 {
+		 $file = $_GET['file_name'];
+		 $directory = $_GET['directory'];
+		 if (file_exists('upload/'.$directory.'/'.$file))
+		 {
+    		header('Content-Description: File Transfer');
+    		header('Content-Type: application/octet-stream');
+   			header('Content-Disposition: attachment; filename='.basename($file));
+    		header('Expires: 0');
+    		header('Cache-Control: must-revalidate');
+    		header('Pragma: public');
+    		header('Content-Length: ' . filesize($file));
+    		readfile($file);
+    		exit;
+		  }
+	 }
+	
     /**
-     * @param $idHash
+     * Displays a message
      *
      * @return Response
      */
-    public function trackingImageAction($idHash)
+    public function messageAction()
     {
-        $response = TrackingPixelHelper::getResponse($this->request);
+        $session = $this->factory->getSession();
+        $message = $session->get('mautic.emailbundle.message', array());
 
-        /** @var \Mautic\EmailBundle\Model\EmailModel $model */
-        $model    = $this->factory->getModel('email');
-        $model->hitEmail($idHash, $this->request);
+        $msg     = (!empty($message['message'])) ? $message['message'] : '';
+        $msgType = (!empty($message['type'])) ? $message['type'] : 'notice';
 
-        $size = strlen($response->getContent());
-        $response->headers->set('Content-Length', $size);
-        $response->headers->set('Connection', 'close');
+        return $this->render('MauticEmailBundle::message.html.php', array(
+            'message'  => $msg,
+            'type'     => $msgType,
+            'template' => $this->factory->getParameter('theme')
+        ));
+    }
 
-        //generate image
+    /**
+     * Gives a preview of the form
+     *
+     * @return Response
+     */
+    public function previewAction($id = 0)
+    {
+        $objectId     = (empty($id)) ? InputHelper::int($this->request->get('id')) : $id;
+        $css          = InputHelper::raw($this->request->get('css'));
+        $model        = $this->factory->getModel('form.form');
+        $form         = $model->getEntity($objectId);
+        $customStyles = '';
+        foreach (explode(',', $css) as $cssStyle) {
+            $customStyles .= sprintf('<link rel="stylesheet" type="text/css" href="%s">', $cssStyle);
+        }
+
+        if ($form === null || !$form->isPublished()) {
+            throw $this->createNotFoundException($this->factory->getTranslator()->trans('mautic.core.url.error.404'));
+
+        } else {
+            $html = $form->getCachedHtml();
+            $name = $form->getName();
+
+            $model->populateValuesWithGetParameters($form, $html);
+
+            $template = $form->getTemplate();
+            if (!empty($template)) {
+                $theme = $this->factory->getTheme($template);
+                if ($theme->getTheme() != $template) {
+                    $config = $theme->getConfig();
+                    if (in_array('form', $config['features'])) {
+                        $template = $theme->getTheme();
+                    } else {
+                        $templateNotFound = true;
+                    }
+                }
+
+                if (empty($templateNotFound)) {
+                    $viewParams = array(
+                        'template'        => $template,
+                        'content'         => $html,
+                        'googleAnalytics' => $this->factory->getParameter('google_analytics')
+                    );
+
+                    return $this->render('MauticFormBundle::form.html.php', $viewParams);
+                }
+            }
+        }
+
+        $response = new Response();
+        $response->setContent('<html><head><title>' . $name . '</title>' . $customStyles . '</head><body>' . $html . '</body></html>');
+        $response->setStatusCode(Response::HTTP_OK);
+        $response->headers->set('Content-Type', 'text/html');
+
         return $response;
     }
 
     /**
-     * @param $idHash
+     * Generates JS file for automatic form generation
+     *
+     * @return Response
      */
-    public function unsubscribeAction($idHash)
+    public function generateAction()
     {
-        //find the email
-        $model      = $this->factory->getModel('email');
-        $translator = $this->get('translator');
-        $stat       = $model->getEmailStatus($idHash);
+        $formId = InputHelper::int($this->request->get('id'));
 
-        if (!empty($stat)) {
-            $email = $stat->getEmail();
-            $lead  = $stat->getLead();
+        $model  = $this->factory->getModel('form.form');
+        $form   = $model->getEntity($formId);
+        $js     = '';
 
-            // Set the lead as current lead
-            /** @var \Mautic\LeadBundle\Model\LeadModel $leadModel */
-            $leadModel = $this->factory->getModel('lead');
-            $leadModel->setCurrentLead($lead);
-
-            $template = $email->getTemplate();
-
-            $model->setDoNotContact($stat, $translator->trans('mautic.email.dnc.unsubscribed'), 'unsubscribed');
-
-            $message = $translator->trans('mautic.email.unsubscribed.success', array(
-                '%email%'          => $stat->getEmailAddress(),
-                '%resubscribeUrl%' => $this->generateUrl('mautic_email_resubscribe', array('idHash' => $idHash))
-            ));
-
-            /** @var \Mautic\FormBundle\Entity\Form $unsubscribeForm */
-            $unsubscribeForm = $email->getUnsubscribeForm();
-
-            if ($unsubscribeForm != null) {
-                $formTemplate = $unsubscribeForm->getTemplate();
-                $formContent  = '<div class="mautic-unsubscribeform">' . $unsubscribeForm->getCachedHtml() . '</div>';
-            }
-        } else {
-            $email = $lead = false;
-            $message = '';
-        }
-
-        if (empty($template) && empty($formTemplate)) {
-            $template = $this->factory->getParameter('theme');
-        } else if (!empty($formTemplate)) {
-            $template = $formTemplate;
-        }
-        $theme  = $this->factory->getTheme($template);
-        if ($theme->getName() != $template) {
-            $template = $theme->getName();
-        }
-        $config = $theme->getConfig();
-
-        $viewParams = array(
-            'email'    => $email,
-            'lead'     => $lead,
-            'template' => $template,
-            'message'  => $message,
-            'type'     => 'notice',
-        );
-        $contentTemplate = 'MauticEmailBundle::message.html.php';
-
-        if (!empty($formContent)) {
-            $viewParams['content'] = $formContent;
-            if (in_array('form', $config['features'])) {
-                $contentTemplate = 'MauticFormBundle::form.html.php';
+        if ($form !== null) {
+            $status = $form->getPublishStatus();
+            if ($status == 'published') {
+                $js = $model->getAutomaticJavascript($form);
             }
         }
 
-        return $this->render($contentTemplate, $viewParams);
-    }
-
-    /**
-     * @param $idHash
-     */
-    public function resubscribeAction($idHash)
-    {
-        //find the email
-        $model      = $this->factory->getModel('email');
-        $translator = $this->get('translator');
-        $stat       = $model->getEmailStatus($idHash);
-
-        if (!empty($stat)) {
-            $email = $stat->getEmail();
-            $lead  = $stat->getLead();
-
-            // Set the lead as current lead
-            /** @var \Mautic\LeadBundle\Model\LeadModel $leadModel */
-            $leadModel = $this->factory->getModel('lead');
-            $leadModel->setCurrentLead($lead);
-
-            $template = $email->getTemplate();
-
-            $model->removeDoNotContact($stat->getEmailAddress());
-
-            $message = $translator->trans('mautic.email.resubscribed.success', array(
-                '%email%' => $stat->getEmailAddress(),
-                '%unsubscribeUrl%' => $this->generateUrl('mautic_email_unsubscribe', array('idHash' => $idHash))
-            ));
-        } else {
-            $email = $lead = false;
-        }
-
-        $theme  = $this->factory->getTheme($template);
-        if ($theme->getName() != $template) {
-            $template = $theme->getName();
-        }
-
-        // Ensure template still exists
-        $theme = $this->factory->getTheme($template);
-        if (empty($theme) || $theme->getName() !== $template) {
-            $template = $this->factory->getParameter('theme');
-        }
-
-        return $this->render('MauticEmailBundle::message.html.php', array(
-            'message'  => $message,
-            'type'     => 'notice',
-            'email'    => $email,
-            'lead'     => $lead,
-            'template' => $template
-        ));
+        $response = new Response();
+        $response->setContent($js);
+        $response->setStatusCode(Response::HTTP_OK);
+        $response->headers->set('Content-Type', 'text/javascript');
+        return $response;
     }
 }

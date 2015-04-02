@@ -1,0 +1,6 @@
+[24-Mar-2015 21:01:33 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385
+[24-Mar-2015 21:09:03 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385
+[24-Mar-2015 21:09:03 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385
+[24-Mar-2015 21:10:36 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385
+[24-Mar-2015 21:10:41 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385
+[24-Mar-2015 21:24:25 UTC] PHP Fatal error:  Cannot redeclare class SessionHandlerInterface in /home/chapelde/public_html/mautic/app/cache/prod/classes.php on line 385

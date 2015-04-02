@@ -60,7 +60,6 @@ class AppKernel extends Kernel
      */
     public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = true)
     {
-
         if (strpos($request->getRequestUri(), 'installer') !== false || !$this->isInstalled()) {
             define('MAUTIC_INSTALLER', 1);
         } else {
@@ -73,7 +72,6 @@ class AppKernel extends Kernel
         if (false === $this->booted) {
             $this->boot();
         }
-
         //the context is not populated at this point so have to do it manually
         $router = $this->getContainer()->get('router');
         $requestContext = new \Symfony\Component\Routing\RequestContext();
@@ -104,11 +102,9 @@ class AppKernel extends Kernel
                 $db->connect();
             } catch (\Exception $e) {
                 error_log($e);
-                throw new \Mautic\CoreBundle\Exception\DatabaseConnectionException(
-                    $this->getContainer()->get('translator')->trans('mautic.core.db.connection.error', array(
-                        '%code%' => $e->getCode()
-                    )
-                ));
+                die($this->getContainer()->get('translator')->trans('mautic.core.db.connection.error', array(
+                    '%code%' => $e->getCode()
+                )));
             }
         }
 

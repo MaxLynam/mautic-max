@@ -311,7 +311,6 @@ class ListModel extends FormModel
         $user  = (!$this->security->isGranted('lead:lists:viewother')) ?
             $this->factory->getUser() : false;
         $lists = $this->em->getRepository('MauticLeadBundle:LeadList')->getLists($user, $alias, '', $withLeads);
-
         return $lists;
     }
 

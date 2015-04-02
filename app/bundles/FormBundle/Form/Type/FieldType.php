@@ -25,9 +25,12 @@ class FieldType extends AbstractType
     /**
      * {@inheritdoc}
      */
+	 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         // Populate settings
+		
+		
         $cleanMasks = array(
             'labelAttributes' => 'string',
             'inputAttributes' => 'string'
@@ -69,13 +72,15 @@ class FieldType extends AbstractType
         } else {
             $type = $options['data']['type'];
             switch ($type) {
+				case 'file':
+					$addHelpMessage = $addShowLabel = $addDefaultValue = $addLabelAttributes = $addIsRequired = false;
+                    break;
                 case 'freetext':
                     $addHelpMessage = $addDefaultValue = $addIsRequired = false;
                     $labelText           = 'mautic.form.field.form.header';
                     $showLabelText       = 'mautic.form.field.form.showheader';
                     $inputAttributesText = 'mautic.form.field.form.freetext_attributes';
                     $labelAttributesText = 'mautic.form.field.form.header_attributes';
-
                     // Allow html
                     $cleanMasks['properties'] = 'html';
                     break;
@@ -108,6 +113,9 @@ class FieldType extends AbstractType
         } else {
             $type = $options['data']['type'];
             switch ($type) {
+				case 'file':
+				$builder->add('properties','formfield_file', array('label' => false));
+				break;
                 case 'select':
                 case 'country':
                     $builder->add('properties', 'formfield_select', array(
@@ -219,8 +227,10 @@ class FieldType extends AbstractType
         }
 
         $builder->add('type', 'hidden');
-
+		
         $update = (!empty($options['data']['properties'])) ? true : false;
+		if($options['data']['type']=='file')
+		{$update = (!empty($options['data']['label'])) ? true : false;}
         if (!empty($update)) {
             $btnValue = 'mautic.core.form.update';
             $btnIcon  = 'fa fa-pencil';
