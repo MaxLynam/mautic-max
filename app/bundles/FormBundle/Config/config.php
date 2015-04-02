@@ -144,6 +144,10 @@ return array(
                 'class' => 'Mautic\FormBundle\Form\Type\FormFieldTextType',
                 'alias' => 'formfield_text'
             ),
+			'mautic.form.type.field_propertyfile'        => array(
+                'class' => 'Mautic\FormBundle\Form\Type\FormFieldFileType',
+                'alias' => 'formfield_file'
+            ),
             'mautic.form.type.field_propertybutton'      => array(
                 'class' => 'Mautic\FormBundle\Form\Type\FormFieldButtonType',
                 'alias' => 'formfield_button'

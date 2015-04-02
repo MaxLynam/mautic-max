@@ -630,7 +630,6 @@ class FormController extends CommonFormController
     {
         $model = $this->factory->getModel('form.form');
         $form  = $model->getEntity($objectId);
-
         if ($form === null) {
             $html =
                 '<h1>'.
@@ -646,6 +645,7 @@ class FormController extends CommonFormController
         $model->populateValuesWithGetParameters($form, $html);
 
         $template = $form->getTemplate();
+		
         if (!empty($template)) {
             $theme = $this->factory->getTheme($template);
             if ($theme->getTheme() != $template) {
@@ -662,11 +662,9 @@ class FormController extends CommonFormController
                     'template' => $template,
                     'content'  => $html,
                 );
-
                 return $this->render('MauticFormBundle::form.html.php', $viewParams);
             }
         }
-
         $response = new Response();
         $response->setContent('<html><head><title>' . $form->getName() . '</title></head><body>' . $html . '</body></html>');
         $response->setStatusCode(Response::HTTP_OK);

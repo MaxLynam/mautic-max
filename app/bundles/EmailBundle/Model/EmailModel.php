@@ -722,7 +722,6 @@ class EmailModel extends FormModel
         $returnEntities   = (isset($options['returnEntities'])) ? $options['returnEntities'] : false;
         $ignoreLeadChecks = (isset($options['ignoreLeadChecks'])) ? $options['ignoreLeadChecks'] : false;
         $tokens           = (isset($options['tokens'])) ? $options['tokens'] : array();
-
         if (!$email->getId()) {
             return ($returnEntities) ? array() : false;
         }
@@ -831,7 +830,17 @@ class EmailModel extends FormModel
             $mailer->message->leadIdHash = $idHash;
 
             //queue the message
-            $mailer->send(true);
+            if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
+			{
+				$mailer->send(true);
+				
+			}
+			else
+			{
+				$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
+				$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
+           		$mailer->send(true);
+			}
 
             //save some memory
             unset($mailer);
@@ -872,8 +881,8 @@ class EmailModel extends FormModel
             return $saveEntities;
         } else {
             $this->saveEntities($saveEntities);
-
             return true;
+			
         }
     }
 
@@ -948,11 +957,17 @@ class EmailModel extends FormModel
             if ($plaintext = $email->getPlainText()) {
                 $mailer->message->addPart($plaintext, 'text/plain');
             }
-
-            //queue the message
-            $mailer->send(true);
-
-            //save some memory
+			
+			if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
+			{
+				$mailer->send(true);
+			}
+			else
+			{
+				$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
+				$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
+           		$mailer->send(true);
+			}
             unset($mailer);
         }
     }

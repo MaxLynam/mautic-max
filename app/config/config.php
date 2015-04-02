@@ -91,7 +91,6 @@ unset($setBundles, $setAddonBundles);
 $loader->import('parameters.php');
 $container->loadFromExtension('mautic_core');
 
-$engines = ($container->getParameter('kernel.environment') == 'dev') ? array('php', 'twig') : array('php');
 $container->loadFromExtension('framework', array(
     'secret'               => '%mautic.secret_key%',
     'router'               => array(
@@ -104,7 +103,9 @@ $container->loadFromExtension('framework', array(
         'enable_annotations' => true
     ),
     'templating'           => array(
-        'engines' => $engines,
+        'engines' => array(
+            'php'
+        ),
         'form' => array(
             'resources' => array(
                 'MauticCoreBundle:FormTheme\\Custom',

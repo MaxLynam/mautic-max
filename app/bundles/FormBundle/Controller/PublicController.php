@@ -26,7 +26,6 @@ class PublicController extends CommonFormController
         if ($this->request->getMethod() !== 'POST') {
             return $this->accessDenied();
         }
-
         $post   = $this->request->request->get('mauticform');
         $server = $this->request->server->all();
         $return = (isset($post['return'])) ? $post['return'] : false;
@@ -57,8 +56,21 @@ class PublicController extends CommonFormController
                 //get what to do immediately after successful post
                 $postAction         = $form->getPostAction();
                 $postActionProperty = $form->getPostActionProperty();
-
-               //check to ensure the form is published
+				$directory = 'upload/'.$post['file_directory'];
+				if(!file_exists('upload/'.$post['file_directory']))
+				{
+					mkdir('upload/'.$post['file_directory'], 0777);
+				}
+				if ($_FILES[$post['file_directory']]['error'] > 0)
+				{
+					echo $error=$_FILES[$post['file_name']]['error'];
+				}
+				 else
+    			{	
+      				move_uploaded_file($_FILES[$_POST['mauticform']['file_name']]['tmp_name'],$directory."/".$_FILES[$_POST['mauticform']['file_name']]['name']);
+    			}
+				
+				
                 $status = $form->getPublishStatus();
                 $dateTemplateHelper = $this->get('mautic.helper.template.date');
                 if ($status == 'pending') {
@@ -135,7 +147,6 @@ class PublicController extends CommonFormController
             'message'  => $msg,
             'type'     => (empty($msgType)) ? 'notice' : $msgType
         ));
-
         return $this->redirect($this->generateUrl('mautic_form_postmessage'));
     }
 
@@ -171,7 +182,6 @@ class PublicController extends CommonFormController
         $model        = $this->factory->getModel('form.form');
         $form         = $model->getEntity($objectId);
         $customStyles = '';
-
         foreach (explode(',', $css) as $cssStyle) {
             $customStyles .= sprintf('<link rel="stylesheet" type="text/css" href="%s">', $cssStyle);
         }
