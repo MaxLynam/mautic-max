@@ -58,6 +58,7 @@ $formId = $form['sessionId']->vars['data'];
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu" role="menu">
+                                    <?php $fields['file']="File";//print_r($fields);?>
                                         <?php foreach ($fields as $fieldType => $field): ?>
                                             <li id="field_<?php echo $fieldType; ?>">
                                                 <a class="list-group-item" data-toggle="ajaxmodal" data-target="#formComponentModal" href="<?php echo $view['router']->generate('mautic_formfield_action', array('objectAction' => 'new', 'type' => $fieldType, 'tmpl' => 'field', 'formId' => $formId)); ?>">
