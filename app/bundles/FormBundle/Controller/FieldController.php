@@ -54,7 +54,7 @@ class FieldController extends CommonFormController
 
         //fire the form builder event
         $customComponents = $this->factory->getModel('form.form')->getCustomComponents();
-
+		
         $customParams = (isset($customComponents['fields'][$fieldType])) ? $customComponents['fields'][$fieldType] : false;
 
         $form = $this->get('form.factory')->create('formfield', $formField, array(
@@ -114,6 +114,8 @@ class FieldController extends CommonFormController
             $viewParams['tmpl']        = 'field';
             $viewParams['form']        = (isset($customParams['formTheme'])) ? $this->setFormTheme($form, 'MauticFormBundle:Builder:field.html.php', $customParams['formTheme']) : $form->createView();
             $viewParams['fieldHeader'] = (!empty($customParams)) ? $this->get('translator')->trans($customParams['label']) : $this->get('translator')->transConditional('mautic.core.type.' . $fieldType, 'mautic.form.field.type.' . $fieldType);
+			if($fieldType='file')
+			{$viewParams['fieldHeader']="File";}
         }
 
         $passthroughVars = array(
@@ -246,6 +248,8 @@ class FieldController extends CommonFormController
                 $viewParams['tmpl']        = 'field';
                 $viewParams['form']        = (isset($customParams['formTheme'])) ? $this->setFormTheme($form, 'MauticFormBundle:Builder:field.html.php', $customParams['formTheme']) : $form->createView();
                 $viewParams['fieldHeader'] = (!empty($customParams)) ? $this->get('translator')->trans($customParams['label']) : $this->get('translator')->transConditional('mautic.core.type.' . $fieldType, 'mautic.form.field.type.' . $fieldType);
+				if($fieldType='file')
+			{$viewParams['fieldHeader']="File";}
             }
 
             $passthroughVars = array(
