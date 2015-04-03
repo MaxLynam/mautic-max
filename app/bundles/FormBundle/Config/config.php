@@ -57,6 +57,10 @@ return array(
                 'path'       => '/form/submit',
                 'controller' => 'MauticFormBundle:Public:submit'
             ),
+			 'mautic_form_download'  => array(
+                'path'       => '/form/download',
+                'controller' => 'MauticFormBundle:Public:download'
+            ),
             'mautic_form_generateform' => array(
                 'path'       => '/form/generate.js',
                 'controller' => 'MauticFormBundle:Public:generate'
@@ -143,6 +147,10 @@ return array(
             'mautic.form.type.field_propertytext'        => array(
                 'class' => 'Mautic\FormBundle\Form\Type\FormFieldTextType',
                 'alias' => 'formfield_text'
+            ),
+			'mautic.form.type.field_propertyfile'        => array(
+                'class' => 'Mautic\FormBundle\Form\Type\FormFieldFileType',
+                'alias' => 'formfield_file'
             ),
             'mautic.form.type.field_propertybutton'      => array(
                 'class' => 'Mautic\FormBundle\Form\Type\FormFieldButtonType',
