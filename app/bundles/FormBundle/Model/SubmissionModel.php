@@ -143,7 +143,10 @@ class SubmissionModel extends CommonFormModel
             } else {
                 if (!empty($value)) {
                     $filter = $fieldHelper->getFieldFilter($type);
-                    $value  = InputHelper::_($value, $filter);
+                    if($type=='file')
+						$value;
+					else
+						$value = InputHelper::_($value, $filter);  
                 }
                 $errors = array_merge($errors, $fieldHelper->validateFieldValue($type, $value));
             }
