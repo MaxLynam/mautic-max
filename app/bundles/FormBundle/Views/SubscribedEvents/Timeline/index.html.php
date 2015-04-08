@@ -56,10 +56,9 @@ if ($page->getId()) {
 							{
 								$str = $results[$field->getAlias()];
 								$cout=substr($str,-2).'</br>';
-								$name=substr(substr($str,(int)$cout,-2),0,-3);
-								$extension=".".substr(substr($str,(int)$cout,-2),strlen($name));
+								$name=substr($str,(int)$cout,-2);
 								?>
-                                <a href="javascript:void(0)" onClick="window.location = '<?php echo $view['router']->generate('mautic_form_download');?>?file_name=<?php echo $name.$extension; ?>&directory=<?php echo substr($str,0,(int)$cout); ?>'"><?php echo $name.$extension; ?></a>
+                                <a href="javascript:void(0)" onClick="window.location = '<?php echo $view['router']->generate('mautic_form_download');?>?file_name=<?php echo $name; ?>&directory=<?php echo substr($str,0,(int)$cout); ?>'"><?php echo $name; ?></a>
 								<?php
 								//echo "<a class='file' href='../upload/".$results[$field->getAlias()]."'>".$results[$field->getAlias()]."</a>";
 							}
