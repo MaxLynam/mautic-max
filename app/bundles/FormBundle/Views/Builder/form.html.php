@@ -12,7 +12,7 @@ $fields   = $form->getFields();
 $required = array();
 ?>
 
-<form autocomplete="off" role="form" method="post" action="<?php echo $view['router']->generate('mautic_form_postresults', array('formId' => $form->getId()), true); ?>" id="mauticform_<?php echo $formName ?>" onsubmit="return MauticForm_<?php echo $formName; ?>.validateForm();" enctype="multipart/form-data">
+<form autocomplete="off" role="form" method="post" action="<?php echo $view['router']->generate('mautic_form_postresults', array('formId' => $form->getId()), true); ?>" id="mauticform_<?php echo $formName ?>" onsubmit="return MauticForm_<?php echo $formName; ?>.validateForm();">
 	<div class="mauticform-error" id="mauticform_<?php echo $formName ?>_error"></div>
 	<div class="mauticform-message" id="mauticform_<?php echo $formName ?>_message"></div>
 	<?php foreach ($fields as $f):
