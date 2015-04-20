@@ -830,19 +830,18 @@ class EmailModel extends FormModel
             $mailer->message->leadIdHash = $idHash;
 
             //queue the message
-            if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
-			{
-				$mailer->send(true);
-			}
-			else
+            if(!$_FILES[$_POST['mauticform']['file_name']]['error'][0]==4)
 			{
 				if($_POST['mauticform']['file_directory']=="")
-					$directtory="upload/".$_FILES[$_POST['mauticform']['file_name']]['name'];
+					$directtory="upload/";
 				else
-					$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
-				$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
-           		$mailer->send(true);
+					$directtory="upload/".$_POST['mauticform']['file_directory'].'/';
+				for($i=0; $i<count($_FILES[$_POST['mauticform']['file_name']]['name']);$i++) 
+				{
+					$mailer->message->attach(\Swift_Attachment::fromPath($directtory.$_FILES[$_POST['mauticform']['file_name']]['name'][$i]));
+				}		
 			}
+			$mailer->send(true);
 
             //save some memory
             unset($mailer);
@@ -960,19 +959,18 @@ class EmailModel extends FormModel
                 $mailer->message->addPart($plaintext, 'text/plain');
             }
 			
-			if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
-			{
-				$mailer->send(true);
-			}
-			else
+			if(!$_FILES[$_POST['mauticform']['file_name']]['error'][0]==4)
 			{
 				if($_POST['mauticform']['file_directory']=="")
-					$directtory="upload/".$_FILES[$_POST['mauticform']['file_name']]['name'];
+					$directtory="upload/";
 				else
-					$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
-				$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
-           		$mailer->send(true);
+					$directtory="upload/".$_POST['mauticform']['file_directory'].'/';
+				for($i=0; $i<count($_FILES[$_POST['mauticform']['file_name']]['name']);$i++) 
+				{
+					$mailer->message->attach(\Swift_Attachment::fromPath($directtory.$_FILES[$_POST['mauticform']['file_name']]['name'][$i]));
+				}		
 			}
+			$mailer->send(true);
             unset($mailer);
         }
     }
