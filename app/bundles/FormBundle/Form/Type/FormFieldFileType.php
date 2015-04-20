@@ -43,39 +43,26 @@ class FormFieldFileType extends AbstractType
      * {@inheritdoc}
 
      */
-
+	public function Getextension()
+	{
+		$stri=dirname(__FILE__)."/../../../../config/local.php";
+		include($stri);
+		$result = array();
+		foreach($parameters['allowed_extensions'] as $key=>$value)
+		{
+			$result[$value]=$value; 
+		}
+		return $result;
+	} 
     public function buildForm(FormBuilderInterface $builder, array $options)
 
     {
-
+		$array_extension = $this->Getextension();
         $builder->add('AllowType', 'choice', array(
 
-            'choices'      => array(
+            'choices'      => $array_extension,
 			
-				'csv'=>'csv',
-				'doc'=>'doc',
-				'docx'=>'docx',
-				'epub'=>'epub',
-				'gif'=>'gif',
-				'jpg'=>'jpg',
-				'jpeg'=>'jpeg',
-				'mpg'=>'mpg',
-				'mpeg'=>'mpeg',
-				'mp3'=>'mp3',
-				'odt'=>'odt',
-				'odp'=>'odp',
-				'ods'=>'ods',
-				'pdf'=>'pdf',
-				'png'=>'png',
-				'ppt'=>'ppt',
-				'pptx'=>'pptx',
-				'tif'=>'tif',
-				'tiff'=>'tiff',
-				'txt'=>'txt',
-				'xls'=>'xls',
-				'xlsx'=>'xlsx',
-				'wav'=>'wav'
-            ),'multiple' =>true,
+			'multiple' =>true,
 
             'label'        => 'Allow Type',
 
