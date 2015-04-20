@@ -22,94 +22,92 @@ $formName = \Mautic\CoreBundle\Helper\InputHelper::alphanum($form->getName());
 
 <script type="text/javascript">
 
+jQuery('.mauticform-hidden').append('<div class="display-file"></div>');
+
 jQuery('input[type=file]').each(function (){
 
-	jQuery('.mauticform-hidden').append("<input type='text' style='display:none' name=mauticform[file_name] value='"+jQuery(this).attr('name')+"'></input>");
+	jQuery('.mauticform-hidden').append("<input type='text' style='display:none' name=mauticform[file_name] value='"+jQuery(this).attr('name').slice(0, -2)+"'></input>");
 
 	jQuery('.mauticform-hidden').append("<input type='text' style='display:none' name=mauticform[file_directory] value='"+jQuery(this).attr('directories')+"'></input>");
 
-	jQuery('.mauticform-hidden').append("<input type='text' id='"+jQuery(this).attr('name')+"' style='display:none' name=mauticform["+jQuery(this).attr('name')+"] value=''></input>");
+	jQuery('.mauticform-hidden').append("<input type='text' id='"+jQuery(this).attr('name').slice(0, -2)+"' style='display:none' name=mauticform["+jQuery(this).attr('name').slice(0, -2)+"] value=''></input>");
 
 	});
+
+function bytesToSize(bytes) {
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes == 0) return 'n/a';
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+    if (i == 0) return bytes + ' ' + sizes[i]; 
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+};
 
 jQuery('input[type=file]').change(function()
 
 {
 
-	var name = jQuery(this).attr('name');
-
+	var name = jQuery(this).attr('name').slice(0, -2);
 	var dir = jQuery(this).attr('directories');
-
-	var file_name = jQuery(this)[0].files[0].name;
-
-	var countstr;
-
-	if(dir.length<10)
-
-		countstr ='0'+dir.length;
-
-	else
-
-		countstr = dir.length;
-
-	jQuery('[name="mauticform['+name+']"]').val(dir+file_name+countstr);
-
+	var html = "<table border='1'><tbody><tr><td style='padding:3px;'>File Name</td><td style='padding:3px;'>File Size</td></tr>";
+	dir = dir+ "/.dirspace./";
+	var file_name = "";
+	for(var i=0;i<jQuery(this)[0].files.length;i++)
+		{
+			var size=bytesToSize(jQuery(this)[0].files[i].size);
+			html+='<tr><td style="padding:3px;">'+jQuery(this)[0].files[i].name+'</td><td style="padding:3px;">'+size+'</td></tr>'
+			if(i<jQuery(this)[0].files.length-1)
+			{
+			 	file_name += jQuery(this)[0].files[i].name + "/.space./";
+			}
+			else
+			{
+				file_name += jQuery(this)[0].files[i].name;
+			}
+		}
+	html+="</tbody></table>";
+	jQuery('.display-file').html(html);
+	jQuery('[name="mauticform['+name+']"]').val(dir+file_name);
 });
 
 	
 
 	function validateFile(ele_file) {
-
-			var file = jQuery(ele_file).val();
-
-			
-
 			var str = jQuery(ele_file).attr('allowtype');
-
 			var temp = new Array();
-
 			temp = str.split(";");
-
-            var filetype = file.substr((~-file.lastIndexOf(".") >>> 0) + 2);
-
-			filetype = filetype.toUpperCase();
-
-			for (a in temp)
-
-            	{
-
-					if (filetype==temp[a])
-
-					    return 0;
-
+			var count = 1;
+			if(str=="")
+				return 0;
+				
+			for(var i=0;i<jQuery(ele_file)[0].files.length;i++)
+				{
+					var file = jQuery(ele_file)[0].files[i].name;
+					var filetype = file.substr((~-file.lastIndexOf(".") >>> 0) + 2);
+					if(temp.indexOf(filetype)>-1)
+					{
+						count = 0;
+					}
+					else
+					{
+						return 1;
+					}
 				}
-
-				return 1;
-
+			return count;		
         }
 
 	
 
 	 jQuery("#mauticform_<?php echo $formName; ?>").submit(function(event){
 
-		if(jQuery('input[type=file]'))
-
+		if(jQuery('input[type=file]').val())
 		{
-
 			var file_error = 0;
-
-			jQuery('input[type=file]').each(function (){file_error+= validateFile(this)})
-
+			jQuery('input[type=file]').each(function (){file_error+=validateFile(this);})
 			if(file_error>0)
-
 			{	
-
 				alert("Wrong Type")
-
         		event.preventDefault();
-
 			}
-
 		}
 
     }); 
