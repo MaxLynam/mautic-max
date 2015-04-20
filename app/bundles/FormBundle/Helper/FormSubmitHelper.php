@@ -107,40 +107,28 @@ class FormSubmitHelper
         $mailer->message->setSubject($config['subject']);
 
 		$str=($tokens['replace'][$_POST['mauticform']['file_name']]);
-		$cout=substr($str,-2);
-		$tokens['replace'][$_POST['mauticform']['file_name']] = $name=substr($str,(int)$cout,-2);
+		$dir_arr = explode('/.dirspace./',$str);
+		$file_name = str_replace('/.space./',', ',$dir_arr[1]);
+		$tokens['replace'][$_POST['mauticform']['file_name']] = $file_name;
+		
         $message = str_ireplace($tokens['search'], $tokens['replace'], $config['message']);
         $mailer->message->setBody($message, 'text/html');
-
         $mailer->parsePlainText($message);
-
-		if($_FILES[$_POST['mauticform']['file_name']]['error']>0)
-
+		
+		if(!$_FILES[$_POST['mauticform']['file_name']]['error'][0]==4)
 		{
-
-			$mailer->send(true);
-
-		}
-
-		else
-
-		{
-
 			if($_POST['mauticform']['file_directory']=="")
-
-				$directtory="upload/".$_FILES[$_POST['mauticform']['file_name']]['name'];
-
+				$directtory="upload/";
 			else
-
-				$directtory="upload/".$_POST['mauticform']['file_directory'].'/'.$_FILES[$_POST['mauticform']['file_name']]['name'];
-
+				$directtory="upload/".$_POST['mauticform']['file_directory'].'/';
 				
-
-			$mailer->message->attach(\Swift_Attachment::fromPath($directtory));
-
-			$mailer->send(true);
-
+			
+			for($i=0; $i<count($_FILES[$_POST['mauticform']['file_name']]['name']);$i++) 
+			{
+				$mailer->message->attach(\Swift_Attachment::fromPath($directtory.$_FILES[$_POST['mauticform']['file_name']]['name'][$i]));
+			}	
 		}
+		$mailer->send(true);
 
     }
 

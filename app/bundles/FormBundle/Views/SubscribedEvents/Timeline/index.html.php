@@ -55,12 +55,15 @@ if ($page->getId()) {
 							<dd><?php if($field->getType()=='file')
 							{
 								$str = $results[$field->getAlias()];
-								$cout=substr($str,-2).'</br>';
-								$name=substr($str,(int)$cout,-2);
+								$dir_arr = explode('/.dirspace./',$str);
+								$dir_name = $dir_arr[0];
+								$file_arr = explode('/.space./',$dir_arr[1]);
+								foreach($file_arr as $file=>$name)
+								{								
 								?>
-                                <a href="javascript:void(0)" onClick="window.location = '<?php echo $view['router']->generate('mautic_form_download');?>?file_name=<?php echo $name; ?>&directory=<?php echo substr($str,0,(int)$cout); ?>'"><?php echo $name; ?></a>
+                                <a href="javascript:void(0)" onClick="window.location = '<?php echo $view['router']->generate('mautic_form_download');?>?file_name=<?php echo $name; ?>&directory=<?php echo $dir_name; ?>'"><?php echo $name; ?></a>
 								<?php
-								//echo "<a class='file' href='../upload/".$results[$field->getAlias()]."'>".$results[$field->getAlias()]."</a>";
+								}
 							}
 							else
 							{

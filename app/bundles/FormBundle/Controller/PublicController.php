@@ -43,6 +43,31 @@ class PublicController extends CommonFormController
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|Response
 
      */
+	private function codeToMessage($code)
+    {
+        $phpFileUploadErrors = array(
+    0 => 'There is no error, the file uploaded with success',
+    1 => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+    2 => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form',
+    3 => 'The uploaded file was only partially uploaded',
+    4 => 'No file was uploaded',
+    6 => 'Missing a temporary folder',
+    7 => 'Failed to write file to disk.',
+    8 => 'A PHP extension stopped the file upload.');
+		return $phpFileUploadErrors[$code];
+    }
+	private function checkFileError($post)
+	{
+		for($i=0; $i<count($_FILES[$post['file_name']]['name']); $i++) 
+		{
+			if ($_FILES[$post['file_name']]['error'][$i] > 0)
+			{
+				$error=$_FILES[$post['file_name']]['error'][$i];
+				return $this->redirect($return . $query . 'mauticError=' . rawurlencode($this->codeToMessage($_FILES[$post['file_name']]['error'][$i])) . '#' . $form->getAlias());
+			}
+		}
+	}
+	
 
     public function submitAction()
 
@@ -113,47 +138,25 @@ class PublicController extends CommonFormController
                 $postAction         = $form->getPostAction();
 
                 $postActionProperty = $form->getPostActionProperty();
-
-				if($post['file_directory']=="")
-
-					$directory="upload";
-
-				else
-
+				if(!$_FILES[$_POST['mauticform']['file_name']]['error'][0]==4)
 				{
-
-					$directory = 'upload/'.$post['file_directory'];
-
-					if(!file_exists('upload/'.$post['file_directory']))
-
+					$this->checkFileError($post);
+					if($post['file_directory']=="")
+						$directory="upload";
+					else
 					{
-
-						mkdir('upload/'.$post['file_directory'], 0755);
-
+						$directory = 'upload/'.$post['file_directory'];
+						if(!file_exists('upload/'.$post['file_directory']))
+						{
+							mkdir('upload/'.$post['file_directory'], 0755);
+						}
 					}
-
+					for($i=0; $i<count($_FILES[$post['file_name']]['name']); $i++) 
+					{	
+      					move_uploaded_file($_FILES[$post['file_name']]['tmp_name'][$i],$directory."/".$_FILES[$post['file_name']]['name'][$i]);
+    				}
 				}
-
-				if ($_FILES[$post['file_name']]['error'] > 0)
-
-				{
-
-					echo $error=$_FILES[$post['file_name']]['error'];
-
-				}
-
-				 else
-
-    			{	
-
-      				move_uploaded_file($_FILES[$_POST['mauticform']['file_name']]['tmp_name'],$directory."/".$_FILES[$_POST['mauticform']['file_name']]['name']);
-
-    			}
-
 				
-
-				
-
                 $status = $form->getPublishStatus();
 
                 $dateTemplateHelper = $this->get('mautic.helper.template.date');
@@ -321,8 +324,16 @@ class PublicController extends CommonFormController
 		 $file = $_GET['file_name'];
 
 		 $directory = $_GET['directory'];
-
-		 if (file_exists('upload/'.$directory.'/'.$file))
+		 
+		 if($directory)
+		 {
+			 $file_dir = 'upload/'.$directory.'/'.$file;
+		 }
+		 else
+		 {
+			 $file_dir = 'upload/'.$file;
+		 }
+		 if (file_exists($file_dir))
 
 		 {
 
